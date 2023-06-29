@@ -1,0 +1,175 @@
+---
+title: Implementar un Blog con NextJs en Digital Ocean
+description: Deployando con NextJs, NodeJs y Nginx.
+date: "2023-29-06"
+---
+
+Antes de comenzar cabe preguntarse: Que es NextJs? NextJs es un framework de Javascript que permite crear aplicaciones en minutos. Su beneficio principal es la facilidad de uso y la escalabilidad. Por ejemplo, este blog que estas leyendo fue creado utilizando NextJs.
+
+Vamos rápidamente a proceder con la implementación de un blog como este ya que sobra información de este framework en los buscadores y si estas acá probablemente eso ya lo sepas.
+
+## Que opciones tenemos para hostear un blog creado con NextJs
+
+NextJs es un proyecto open source construido y mantenido por Vercel, con lo resulta obvio que la primera opción es hostearlo con el servicio que proveen ellos, que es administrado, tiene un costo y es muy fácil de configurar.
+
+Pero como somos animales del infrakingodm esta solución no es para nosotros. En cambio, vamos a ir con la opción de 'Self Hosting' es decir que vamos a provisionar nuestro servidor en una nube, en este caso Digital Ocean. Y vamos a hacerlo con una porción mucho menor del costo que tendriamos en Vercel y en el camino vamos a aprender sobre algunas herramientas muy utiles para el manejo de web servers.
+
+## Pre requisitos de instalación
+
+Antes que nada veamos que necesitamos para una implementación exitosa:
+
+1.  Template de NextJs en algún repositorio propio.
+2.  Registro de DNS en algún proveedor de dominios.
+3.  Servidor con Debian 11. En nuestro caso vamos a provisionar un droplet muy basico en Digital Ocean, pero podría utilizarse cualquier VM on prem o en algún otro servicio Cloud.
+4.  Además, vamos a utilizar los siguientes paquetes/aplicaciones: GIT, NodeJs, NPM, Nginx, Yarn, PM2.
+5.  Configurar los DNS de tu dominio para que apunten a tu servidor.  
+
+## Elije un Template y clona el repositorio
+
+En nuestro caso hemos seleccionado Contentlayer Blog Starter, pero puedes encontrar algunos [aquí](https://vercel.com/templates).
+
+Lo primero que debes hacer es clonar el repositorio, para eso hay innumerables cantidad de [guias](https://docs.github.com/es/repositories/creating-and-managing-repositories/cloning-a-repository). 
+
+Una vez que tienes una copia local del template elegido, recomiendo hacer un push a tu GitHub ya que luego al postear vamos a modificar ese repositorio y hacer un pull desde el servidor. De esta forma haces los cambios en tu máquina, los subes y luego los impactaremos como te mencione recién.
+
+## Registra tu dominio
+
+Para el siguiente paso en mi caso he utilizado [GoDaddy](https://www.godaddy.com/), un proveedor bastante conocido y que ofrece distintios precios. En nuestro caso, registramos el dominio infrakingdom.xyz. Registrar un dominio no es una tarea compleja, te dejo [aquí](https://ar.godaddy.com/help) la página de soporte, además tienen habilitadas lineas telefónicas de asistencia al usuario.
+
+Una vez que tengas registrado tu dominio vamos a dar por completado este paso. Luego volveremos a GoDaddy para completar la configuración del registro DNS.
+
+## Provisiona un servidor con Debian 11
+
+Acá es donde las cosas comienzan a ponerse interesantes. Hemos elegido el proveedor de servicios Cloud [Digital Ocean](https://www.digitalocean.com/).
+
+El primer paso va a ser configurar tu cuenta y agregar un método de pago. Luego de realizado este paso, vamos a ir al panel de control y elegir la opcion Deploy a Virtual Machine.
+Esto nos va a llevar a la seccion 'Create Droplets'. Acto seguido debemos elegir la región en donde va a estar alojada nuestra VM, aquí la recomendación es elegir una región que este mas cercana a nuestros potenciales visitantes. Puedes hacer tests de velocidad en [Este sitio](https://www.ozspeedtest.com/speedtest-locations).
+En nuestro caso la mejor ubicación parece ser San Francisco, aunque New York esta bastante bien igual. Luego vamos a elegir un Datacenter (SF03 en nuestro caso). Vamos a dejar la VPC Network como default. Luego vamos a elegir la imagen Debian 11 (x64). Vamos a elegir Shared CPU como droplet type. CPU options Regular. Y vamos a elegir la máquina 1 GB / 1 CPU / 10 GB SSD Disk / 1 TB transfer.
+
+El proximo paso es importante desde el punto de vista de la seguridad: Choose Authentication Method. Vamos a elegir SSH Key. Para esto vamos a tener que crear una SSH Key dandole a Add SSH Key y siguiendo las instrucciones.
+
+Luego vamos a cambiar el nombre de la instancia o Hostname: en nuestro caso infrakingdom-blog. Tambien agregamos el Tag 'Blog'. Y por ultimo damos a 'Create Droplet'. En la proxima pantalla vamos a ver a nuestra instancia creandose.
+
+Parte de las configuraciones adicionales que debemos hacer son reservar una ip estatica, resetear la password de root y configurar una regla de firewall para que nuestra instancia pueda ser accedida desde internet a traves del puerto 80.
+
+Reservar una ip estatica es simple, debemos ir a Networking, Reserved IPs, y luego Assign Reserved IP en nuestra instancia recién creada.
+
+Luego vamos a ir a Firewall, Create Firewall. Elegimos un nombre para el firewall y configuramos una inbound rule para HTTP y otra para HTTPS (puertos 80 y 443). Dejamos el resto como esta y vamos a dar a Create Firewall.
+
+Para resetear la password de root debemos ir a Droplets, seleccionamos nuestra instancia, Access, Reset root password. Nos enviaran una password temporal al correo que debemos cambiar al primer logueo.
+
+> Importante!!: en este punto ya tenemos nuestra IP reservada, con lo cual debemos editar el registro A en godaddy para apuntarlo a nuestra ip. Para hacer esto hay miles de tutoriales en los buscadores, no es una tarea compleja. Una vez configurado el registro para que apunte a nuestra ip reservada, continuamos.
+
+Ya estamos listos para loguearnos por SSH y configurar nuestro servidor. En mi caso voy a hacerlo a traves de Putty, pero es posible hacerlo a traves del boton de 'Console' en el panel de nuestra instancia.
+
+De cualquier modo ya estamos listos para pasar al siguente paso.
+
+## Configura GIT, NodeJs, NPM, Nginx, Yarn y PM2.
+
+Ya estamos un poco mas cerca, y llego la hora de tirar comandos. Como siempre, lo primero que vamos a correr es la actualizacion de paquetes de debian.
+
+```bash
+sudo apt-get update
+```
+
+```bash
+sudo apt-get upgrade
+```
+Estamos listos para comenzar a instar los paquetes necesarios para NextJs. Vamos instalar Git para clonar nuestro repositorio, Nodejs para utilizar NPM, NPM para instalar yarn y Nginx sera nuestro web server encargado de rutear las requests a los destinos correctos. PM2 es una tool para manejar nuestro Nodejs.
+```bash
+sudo apt-get install git nodejs npm nginx -y
+```bash
+```bash
+npm install -g yarn
+```bash
+```bash
+yarn global add pm2
+```bash
+Ahora vamos a crear un directori para nuestro proyecto, en /var/www/ que es el estandard. 
+```bash
+mkdir /var/www/nuestroproyecto
+```bash
+```bash
+cd /var/www/nuestroproyecto
+```bash
+Acto seguido vamos a clonar nuestro proyecto en el directorio que acabamos de crear.
+```bash
+git clone https://github.com/nuestroproyecto/proyecto.git .
+```bash
+Bien, si damos ls ahora podremos ver los archivos en nuestro directorio.
+Ahora que tenemos nuestro proyecto vamos a buildearlo.
+Debemos tener la version correcta de node para continuar, en este caso al menos la 18.
+Para eso quiza sea necesario correr el siguiente comando.
+```bash
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+```bash
+sudo apt install nodejs
+```bash
+```bash
+node -v
+```bash
+Si la version es la correcta continuamos.
+```bash
+yarn --network-timeout 100000
+```bash
+```bash
+yarn build
+```bash
+Es importante que este paso se complete de manera satisfactoria. Deberia mostrarnos los detalles del espacio que ocupa el sitio y luego confirmar 'Done in 11.06s'
+El proximo paso es indicarle a Nginx a donde debe rutear a nuestros visitantes. Recuerden que aquí deben tener en cuenta el dominio que hemos registrado.
+```bash
+nano /etc/nginx/sites-availalbe/nuestroproyecto.com
+```bash
+En el editor vamos a pegar el siguiente codigo:
+```bash
+server {
+    listen 80;
+server_name nuestroproyecto.com nuestroproyecto.com;
+root /var/www/nuestroproyecto;
+    access_log /var/log/nextjs/access.log;
+    error_log /var/log/nextjs/error.log error;
+index index.html index.htm;
+location /_next/ {
+        alias /var/www/nuestroproyecto/.next/;
+        expires 30d;
+        access_log on;
+    }
+location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_read_timeout 60;
+        proxy_connect_timeout 60;
+        proxy_redirect off;
+# Allow the use of websockets
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```bash
+Cerramos el editor con CTRL+X y confirmamos para guardar los cambios.
+Ahora solo restan unos pasos.
+Vamos a crear la carpeta de logs.
+```bash
+sudo mkdir /var/log/nextjs
+```bash
+Luego vamos a pedirle a Nginx que habilite el sitio:
+```bash
+sudo ln -s /etc/nginx/sites-available/tutorial.be /etc/nginx/sites-enabled/
+```bash
+```bash
+sudo nginx -t
+```bash
+```bash
+sudo nginx -s reload
+```bash
+Por ultimo, vamos a iniciar pm2.
+```bash
+cd /var/www/tutorialFolder/
+```bash
+```bash
+pm2 start yarn --name "nexttutorial" -- start
+```bash
+
+Este es el fin del tutorial, espero que les haya funcionado, en caso de que no, o por cualquier otro comentario pueden escribirme a traves de [LinkedIn](https://www.linkedin.com/in/juansimoncastro/)
