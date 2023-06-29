@@ -78,48 +78,49 @@ sudo apt-get upgrade
 Estamos listos para comenzar a instar los paquetes necesarios para NextJs. Vamos instalar Git para clonar nuestro repositorio, Nodejs para utilizar NPM, NPM para instalar yarn y Nginx sera nuestro web server encargado de rutear las requests a los destinos correctos. PM2 es una tool para manejar nuestro Nodejs.
 ```bash
 sudo apt-get install git nodejs npm nginx -y
-```bash
+```
 ```bash
 npm install -g yarn
-```bash
+```
 ```bash
 yarn global add pm2
-```bash
+```
 Ahora vamos a crear un directori para nuestro proyecto, en /var/www/ que es el estandard. 
 ```bash
 mkdir /var/www/nuestroproyecto
-```bash
+```
 ```bash
 cd /var/www/nuestroproyecto
-```bash
+```
 Acto seguido vamos a clonar nuestro proyecto en el directorio que acabamos de crear.
 ```bash
 git clone https://github.com/nuestroproyecto/proyecto.git .
-```bash
+```
 Bien, si damos ls ahora podremos ver los archivos en nuestro directorio.
 Ahora que tenemos nuestro proyecto vamos a buildearlo.
 Debemos tener la version correcta de node para continuar, en este caso al menos la 18.
 Para eso quiza sea necesario correr el siguiente comando.
 ```bash
 curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+```
 ```bash
 sudo apt install nodejs
-```bash
+```
 ```bash
 node -v
-```bash
+```
 Si la version es la correcta continuamos.
 ```bash
 yarn --network-timeout 100000
-```bash
+```
 ```bash
 yarn build
-```bash
+```
 Es importante que este paso se complete de manera satisfactoria. Deberia mostrarnos los detalles del espacio que ocupa el sitio y luego confirmar 'Done in 11.06s'
 El proximo paso es indicarle a Nginx a donde debe rutear a nuestros visitantes. Recuerden que aquí deben tener en cuenta el dominio que hemos registrado.
 ```bash
 nano /etc/nginx/sites-availalbe/nuestroproyecto.com
-```bash
+```
 En el editor vamos a pegar el siguiente codigo:
 ```bash
 server {
@@ -147,29 +148,29 @@ location / {
         proxy_cache_bypass $http_upgrade;
     }
 }
-```bash
+```
 Cerramos el editor con CTRL+X y confirmamos para guardar los cambios.
 Ahora solo restan unos pasos.
 Vamos a crear la carpeta de logs.
 ```bash
 sudo mkdir /var/log/nextjs
-```bash
+```
 Luego vamos a pedirle a Nginx que habilite el sitio:
 ```bash
 sudo ln -s /etc/nginx/sites-available/tutorial.be /etc/nginx/sites-enabled/
-```bash
+```
 ```bash
 sudo nginx -t
-```bash
+```
 ```bash
 sudo nginx -s reload
-```bash
+```
 Por ultimo, vamos a iniciar pm2.
 ```bash
 cd /var/www/tutorialFolder/
-```bash
+```
 ```bash
 pm2 start yarn --name "nexttutorial" -- start
-```bash
+```
 
 Este es el fin del tutorial, espero que les haya funcionado, en caso de que no, o por cualquier otro comentario pueden escribirme a traves de [LinkedIn](https://www.linkedin.com/in/juansimoncastro/)
