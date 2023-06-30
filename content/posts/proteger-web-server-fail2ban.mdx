@@ -20,11 +20,11 @@ Luego nos va a pedir que creemos un password y lo confirmemos ingresándolo 2 ve
 ```bash
 usermod -aG sudo username
 ```
-Verificamos que el usuario haya sido correctamente añadido al grupo
+Verificamos que el usuario haya sido correctamente añadido al grupo.
 ```bash
 getent group sudo
 ```
-Verificamos que el usuario tenga permisos de SUDO
+Verificamos que el usuario tenga permisos de SUDO.
 ```bash
 su - username
 ```
@@ -69,7 +69,7 @@ Simplemente pegamos todo el contenido copiado, damos CTRL + X y confirmamos (Y).
 Ya podemos probar el logueo a través de ssh con nuestra private Key. Con esto completamos el primer paso.
 
 # Deshabilitar el logueo con root
-Ubicamos los archivos de configuracion de sshd
+Ubicamos los archivos de configuración de sshd.
 ```bash
 nano /etc/ssh/sshd_config
 ```
@@ -80,15 +80,15 @@ sudo systemctl restart ssh.service
 Listo, ya nadie puede loguearse por ssh con root.
 
 # Instalar y configurar Fail2Ban
-Antes que nada, vamos a actualizar los paquetes de debian
+Antes que nada, vamos a actualizar los paquetes de debian.
 ```bash
 sudo apt update
 ```
-Luego instalamos fail2ban
+Luego instalamos fail2ban.
 ```bash
 sudo apt install fail2ban
 ```
-Bien ya lo tenemos instalado pero el servicio por defecto esta deshabilitado, si estuviera habilitado debemos stopearlo antes de configurarlo.
+Bien, ya lo tenemos instalado pero el servicio por defecto esta deshabilitado, si estuviera habilitado debemos stopearlo antes de configurarlo.
 ```bash
 systemctl status fail2ban.service
 ```
@@ -99,7 +99,7 @@ Los archivos de configuración se encuentran en /etc/fail2ban. En nuestro caso v
 ```bash
 sudo cp jail.conf jail.local
 ```
-Ahora vamos a comenzar a cambiar la configuración
+Ahora vamos a comenzar a cambiar la configuración.
 ```bash
 sudo nano jail.local
 ```
@@ -112,7 +112,7 @@ Luego vamos a ubicar la directiva bantime, en mi caso voy a dejar el default.
 ```bash
 bantime = 10m
 ```
-Tenemos 2 directivas adicionales, las cuales son findtime y maxretry que van a determinar cuándo una conexión es considerada agresiva, en mi caso voy a dejarlo que viene por defecto.
+Tenemos 2 directivas adicionales, las cuales son findtime y maxretry que van a determinar cuándo una conexión es considerada agresiva, en mi caso voy a dejar lo que viene por defecto.
 ```bash
 findtime = 10m
 maxretry = 5
@@ -136,7 +136,7 @@ cat /etc/fail2ban/filter.d/nginx-http-auth.conf
 ```
 
 # Habilitar Fail2Ban
-Ya Podemos volver a habilitar el servicio, para esto hacemos:
+Ya podemos volver a habilitar el servicio, para esto hacemos:
 ```bash
 sudo systemctl enable fail2ban
 ```
@@ -153,5 +153,5 @@ sudo fail2ban-client status
 ```bash
 sudo fail2ban-client status nginx-http-auth
 ```
-Listo, con esto ya tenemos configurado el Fail2ban en nuestro web server.
+Listo! con esto ya tenemos configurado el Fail2ban en nuestro web server.
 Este es el fin del tutorial, espero que les haya funcionado, en caso de que no, o por cualquier otro comentario pueden escribirme a través de [LinkedIn](https://www.linkedin.com/in/juansimoncastro/)
