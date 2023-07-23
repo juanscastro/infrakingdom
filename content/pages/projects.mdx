@@ -5,5 +5,15 @@ description: Lista de proyectos realizados
 
 ## Cocodo
 
-Una REST API creada con express, node, mysql y boostrap. Se trata de una herramienta para buscar proyectos de desarrollo de aplicaciones y dirigido a personas que deseen colaborar con otros desarrolladores.
+Una REST API creada con NodeJs, Express, Json Web Tokens, MySql y Boostrap. Se trata de una herramienta para buscar proyectos de desarrollo de aplicaciones y dirigido a personas que deseen colaborar con otros desarrolladores.
+
+Durante la realización de este proyecto tuve la oportunidad de aprender sobre bases de datos, creación, definicion, seguridad y puesta en linea. La misma está hosteada en una virtual machine sobre Ubuntu 22.04. 
+
+Ademas, la base de datos es accedida desde el application server. Esta es otra virtual machine con Ubuntu 22.04 y se comunican a traves de sus IPs privadas ya que están ambas dentro de la misma VPC.
+
+El application server corre una aplicación de NodeJs realizada con Express, handlebars, JWT y boostrap. Para la publicación de esta aplicación se configuró GNINX como reverse proxy y Web Server. Json Web Tokens se utiliza para la autenticación de usuarios.
+
+Finalmente, para la realización del proyecto fue indispensable configurar firewalls, Public/Private Key Infrastructure y variables de entorno.
+
+Visita [COCODO](https://www.cocodo.xyz) 
 
